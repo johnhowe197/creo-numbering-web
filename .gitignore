@@ -1,0 +1,15 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+
+# 构建产物
+build/
+dist/
+
+# 测试报告
+test_reports/
+
+# 业务数据（不入版本库）
+creo编号器/05S01101.json
+creo编号器/numbers.json
+creo编号器/data/
