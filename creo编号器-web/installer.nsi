@@ -1,4 +1,4 @@
-; Creo模型树自动取号器（Web 本地版）安装脚本
+﻿; Creo模型树自动取号器（Web 本地版）安装脚本
 ; 使用方法：安装 NSIS 后右键本文件 -> Compile NSIS Script，
 ; 或在命令行执行 makensis installer.nsi（需先执行 build.spec 打包）
 

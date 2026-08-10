@@ -13,6 +13,7 @@ test_reports/
 creo编号器-web/web/node_modules/
 creo编号器-web/web/dist/
 creo编号器-web/data/
+creo编号器-web/*.exe
 .playwright-mcp/
 web_numbering*.png
 
