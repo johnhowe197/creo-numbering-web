@@ -164,7 +164,8 @@ def get_next_top_component_number(prefix: str, all_numbers: List[str]) -> Tuple[
     return True, new_number, new_suffix
 
 
-def generate_number(parent_no: str, number_type: str, all_numbers: List[str]) -> Tuple[bool, str, str]:
+def generate_number(parent_no: str, number_type: str, all_numbers: List[str],
+                    host_number: Optional[str] = None) -> Tuple[bool, str, str]:
     """
     统一入口：生成新图号
 
@@ -172,6 +173,8 @@ def generate_number(parent_no: str, number_type: str, all_numbers: List[str]) ->
         parent_no: 父级图号
         number_type: 类型 ('component' 或 'part')
         all_numbers: 所有已有图号列表
+        host_number: 可选。字母组件下创建零件时，零件使用宿主（字母组件的父级）
+                     的共享零件序列；由调用方（UI/TreeModel）传入。
 
     Returns:
         Tuple[bool, str, str]: (是否成功, 新图号或错误信息, 新层级码)
@@ -188,6 +191,13 @@ def generate_number(parent_no: str, number_type: str, all_numbers: List[str]) ->
             return get_next_top_component_number(prefix, all_numbers)
         return get_next_component_number(parent_no, all_numbers)
     elif number_type == 'part':
+        # 先验证父级，避免非法图号抛异常
+        valid, error = validate_parent(parent_no)
+        if not valid:
+            return False, error, ""
+        # 字母组件下创建零件：使用宿主（字母组件的父级）的共享零件序列
+        if is_alpha_component(parent_no) and host_number:
+            return get_next_part_number(host_number, all_numbers)
         return get_next_part_number(parent_no, all_numbers)
     else:
         return False, f"无效的图号类型: {number_type}", ""

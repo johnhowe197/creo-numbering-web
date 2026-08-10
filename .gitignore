@@ -9,6 +9,13 @@ dist/
 # 测试报告
 test_reports/
 
+# Web 版（creo编号器-web）
+creo编号器-web/web/node_modules/
+creo编号器-web/web/dist/
+creo编号器-web/data/
+.playwright-mcp/
+web_numbering_full.png
+
 # 业务数据（不入版本库）
 creo编号器/05S01101.json
 creo编号器/numbers.json

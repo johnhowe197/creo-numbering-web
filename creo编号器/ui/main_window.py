@@ -360,6 +360,11 @@ class MainWindow(QMainWindow):
         # 获取所有已有图号
         existing = self.tree_model.get_all_numbers()
 
+        # 字母组件下创建零件：使用宿主（字母组件的父级）的共享零件序列
+        host_number = None
+        if is_alpha_component(parent_number) and parent_node and parent_node.parent:
+            host_number = parent_node.parent
+
         # 选择添加方式：自动生成（默认）或手动输入
         options = ["自动生成图号", "手动输入图号"]
         choice, ok = QInputDialog.getItem(
@@ -369,14 +374,18 @@ class MainWindow(QMainWindow):
             return
 
         if choice == options[0]:
-            # 自动生成：父级图号 + "-序号"（分叉法）
-            success, new_number, _ = generate_number(parent_number, "part", existing)
+            # 自动生成：父级图号 + "-序号"（分叉法）；字母组件用宿主序列
+            success, new_number, _ = generate_number(
+                parent_number, "part", existing, host_number=host_number
+            )
             if not success:
                 QMessageBox.warning(self, "错误", new_number)
                 return
         else:
             # 手动输入：零件图号必须以 -数字 结尾，默认给出自动计算的建议值
-            _, default_number, _ = generate_number(parent_number, "part", existing)
+            _, default_number, _ = generate_number(
+                parent_number, "part", existing, host_number=host_number
+            )
             new_number, ok = QInputDialog.getText(
                 self, "添加零件",
                 f"请输入子零件图号（以 -数字 结尾）:\n父级: {parent_number}",
@@ -386,7 +395,9 @@ class MainWindow(QMainWindow):
                 return
             new_number = new_number.strip()
 
-            error = self._validate_manual_part(new_number, parent_number)
+            error = self._validate_manual_part(
+                new_number, parent_number, host_number=host_number
+            )
             if error:
                 QMessageBox.warning(self, "错误", error)
                 return
@@ -421,7 +432,9 @@ class MainWindow(QMainWindow):
                 return f"组件图号应以根前缀 {prefix} 开头"
         return None
 
-    def _validate_manual_part(self, new_number: str, parent_number: str) -> Optional[str]:
+    def _validate_manual_part(
+        self, new_number: str, parent_number: str, host_number: Optional[str] = None
+    ) -> Optional[str]:
         """校验手动输入的零件图号，返回错误信息或 None"""
         if new_number in self.tree_model.nodes:
             return "图号已存在"
@@ -431,8 +444,9 @@ class MainWindow(QMainWindow):
             parse_drawing_number(new_number)
         except ValueError as e:
             return str(e)
-        if not new_number.startswith(parent_number + "-"):
-            return f"零件图号应以父级图号 {parent_number}- 开头"
+        prefix = host_number or parent_number
+        if not new_number.startswith(prefix + "-"):
+            return f"零件图号应以{prefix}- 开头"
         return None
 
     def on_delete_node(self):

@@ -155,6 +155,13 @@ def test_alpha_component():
     assert result == "05S01101-ZBC-1", f"Expected 05S01101-ZBC-1, got {result}"
     print(f"OK 字母组件下零件编号: {result}")
 
+    # 字母组件下新建零件：传入宿主（字母组件的父级）时使用宿主共享序列
+    success, result, _ = generate_number(
+        "05S01101-ZBC", "part", ["05S01101-00-1"], host_number="05S01101-00"
+    )
+    assert result == "05S01101-00-2", f"Expected 05S01101-00-2, got {result}"
+    print(f"OK 字母组件零件宿主序列: {result}")
+
     # 数字组件（追加法）行为不变
     success, result, _ = generate_number("05S01101-10", "component", ["05S01101-1001"])
     assert result == "05S01101-1002", f"Expected 05S01101-1002, got {result}"
