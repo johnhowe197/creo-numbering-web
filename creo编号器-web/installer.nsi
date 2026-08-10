@@ -11,7 +11,11 @@ InstallDir "$LOCALAPPDATA\Programs\Creo编号器Web"
 RequestExecutionLevel user
 
 !define MUI_ABORTWARNING
-!insertmacro MUI_PAGE_DIRECTORY
+
+!define MUI_DIRECTORYPAGE_TEXT_TOP "请选择您有写入权限的目录（例如 D:\Creo编号器Web）。请不要安装到 Program Files，否则程序将无法写入数据。"
+!define MUI_DIRECTORYPAGE_TEXT_DESTINATION "安装位置"
+
+
 !insertmacro MUI_PAGE_INSTFILES
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
