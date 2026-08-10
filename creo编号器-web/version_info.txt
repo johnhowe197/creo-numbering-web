@@ -1,0 +1,33 @@
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(1, 0, 0, 0),
+    prodvers=(1, 0, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          u'080404b0',
+          [
+            StringStruct(u'CompanyName', u'Creo Tools'),
+            StringStruct(u'FileDescription', u'Creo模型树自动取号器（Web 本地版）'),
+            StringStruct(u'FileVersion', u'1.0.0.0'),
+            StringStruct(u'InternalName', u'creo_numbering_web'),
+            StringStruct(u'LegalCopyright', u'Copyright © 2026'),
+            StringStruct(u'OriginalFilename', u'Creo编号器Web.exe'),
+            StringStruct(u'ProductName', u'Creo模型树自动取号器'),
+            StringStruct(u'ProductVersion', u'1.0.0.0'),
+            StringStruct(u'Comments', u'本地服务版：浏览器界面，数据存安装目录 data 下')
+          ]
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct(u'Translation', [2052, 1200])])
+  ]
+)

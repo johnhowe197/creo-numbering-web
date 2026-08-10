@@ -6,12 +6,29 @@ SQLite 数据访问层
 - nodes: 节点（含父级引用与兄弟顺序，编号在服务端原子分配）
 """
 
+import os
 import sqlite3
+import sys
 from datetime import datetime
 from pathlib import Path
 
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "numbering.db"
+def _default_data_dir() -> Path:
+    """数据目录解析：
+    1. 环境变量 NUMBERING_DATA_DIR（自定义数据位置）
+    2. 打包后的 exe 所在目录下 data（安装版数据跟随安装位置）
+    3. 开发模式：项目目录下 data
+    """
+    env_dir = os.environ.get("NUMBERING_DATA_DIR")
+    if env_dir:
+        return Path(env_dir)
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent / "data"
+    return Path(__file__).resolve().parent.parent / "data"
+
+
+DATA_DIR = _default_data_dir()
+DB_PATH = DATA_DIR / "numbering.db"
 
 
 def now() -> str:
