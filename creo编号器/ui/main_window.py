@@ -20,7 +20,7 @@ from core import (
     TreeModel, TreeNode,
     parse_drawing_number,
     validate_parent, generate_number,
-    is_component, is_part
+    is_component, is_part, is_alpha_component, is_host_level
 )
 
 
@@ -294,42 +294,58 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "警告", "该节点不能添加子组件")
             return
 
-        # 获取所有已有图号
         existing = self.tree_model.get_all_numbers()
 
-        # 选择添加方式：自动生成（默认）或手动输入（支持字母图号，如 ZBC）
-        options = ["自动生成图号", "手动输入图号"]
-        choice, ok = QInputDialog.getItem(
-            self, "添加组件", "选择添加方式:", options, 0, False
-        )
-        if not ok:
-            return
-
-        if choice == options[0]:
-            # 自动生成：
-            # - 字母组件（如 LS001-ZBC）下 → 根前缀 + 两位数字全局编号（LS001-01、02...）
-            # - 数字组件（如 LS001-10）下 → 追加法（LS001-1001、1002...）
-            # - 根图号下 → LS001-00 开始
-            success, new_number, _ = generate_number(parent_number, "component", existing)
-            if not success:
-                QMessageBox.warning(self, "错误", new_number)
-                return
-        else:
-            # 手动输入：支持字母图号，默认给出自动计算的建议值
-            _, default_number, _ = generate_number(parent_number, "component", existing)
+        # 主机层（如 -00）：只手动输入字母组件（ZBC/KTC 等）
+        if is_host_level(parent_number, parent_node.parent, self.tree_model.root_number):
+            prefix = parse_drawing_number(self.tree_model.root_number)["prefix"]
             new_number, ok = QInputDialog.getText(
                 self, "添加组件",
-                f"请输入子组件图号（可含字母）:\n父级: {parent_number}",
-                text=default_number or ""
+                f"{parent_number} 为主机层，请输入字母组件图号"
+                f"（如 {prefix}-ZBC、{prefix}-KTC）:\n父级: {parent_number}",
+                text=""
             )
             if not ok or not new_number.strip():
                 return
             new_number = new_number.strip()
-
             error = self._validate_manual_component(new_number)
             if error:
                 QMessageBox.warning(self, "错误", error)
                 return
+        else:
+            # 选择添加方式：自动生成（默认）或手动输入（支持字母图号，如 ZBC）
+            options = ["自动生成图号", "手动输入图号"]
+            choice, ok = QInputDialog.getItem(
+                self, "添加组件", "选择添加方式:", options, 0, False
+            )
+            if not ok:
+                return
+
+            if choice == options[0]:
+                # 自动生成：
+                # - 字母组件（如 LS001-ZBC）下 → 根前缀 + 两位数字全局编号（LS001-01、02...）
+                # - 数字组件（如 LS001-10）下 → 追加法（LS001-1001、1002...）
+                # - 根图号下 → LS001-00 开始
+                success, new_number, _ = generate_number(parent_number, "component", existing)
+                if not success:
+                    QMessageBox.warning(self, "错误", new_number)
+                    return
+            else:
+                # 手动输入：支持字母图号，默认给出自动计算的建议值
+                _, default_number, _ = generate_number(parent_number, "component", existing)
+                new_number, ok = QInputDialog.getText(
+                    self, "添加组件",
+                    f"请输入子组件图号（可含字母）:\n父级: {parent_number}",
+                    text=default_number or ""
+                )
+                if not ok or not new_number.strip():
+                    return
+                new_number = new_number.strip()
+
+                error = self._validate_manual_component(new_number)
+                if error:
+                    QMessageBox.warning(self, "错误", error)
+                    return
 
         # 添加组件
         if self.tree_model.add_component(parent_number, new_number):
@@ -355,6 +371,15 @@ class MainWindow(QMainWindow):
 
         if not parent_node or not parent_node.can_have_children():
             QMessageBox.warning(self, "警告", "该节点不能添加子零件")
+            return
+
+        # 主机层（如 -00）：不创建零件
+        if is_host_level(parent_number, parent_node.parent, self.tree_model.root_number):
+            QMessageBox.warning(
+                self, "警告",
+                f"{parent_number} 为主机层，不创建零件，"
+                "零件请添加到其下的字母组件（如 -ZBC）中"
+            )
             return
 
         # 获取所有已有图号

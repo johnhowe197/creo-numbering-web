@@ -90,6 +90,29 @@ def is_alpha_component(dwg_no: str) -> bool:
     return any(c.isalpha() for c in parsed['level_code'])
 
 
+def is_host_level(parent_number: str, parent_parent: Optional[str], root_number: str) -> bool:
+    """
+    判断是否为「主机层」：根的直接子级、层级码为两位纯数字（如 -00）
+
+    主机层只放字母组件（手动输入），不创建零件。
+
+    Args:
+        parent_number: 父级图号（候选主机层节点）
+        parent_parent: 父级图号的父级（树模型中的 parent 引用）
+        root_number: 项目根图号
+
+    Returns:
+        bool: 是否为主机层
+    """
+    if not parent_parent or parent_parent != root_number:
+        return False
+    parsed = parse_drawing_number(parent_number)
+    if parsed['is_root'] or parsed['is_part']:
+        return False
+    level_code = parsed['level_code']
+    return len(level_code) == 2 and level_code.isdigit()
+
+
 def is_part(dwg_no: str) -> bool:
     """
     判断图号是否为零件（末尾为 -数字）

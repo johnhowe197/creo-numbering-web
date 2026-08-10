@@ -7,6 +7,7 @@ from core import (
     is_component,
     is_part,
     is_alpha_component,
+    is_host_level,
     validate_parent,
     generate_number,
     get_number_info,
@@ -166,6 +167,13 @@ def test_alpha_component():
     success, result, _ = generate_number("05S01101-10", "component", ["05S01101-1001"])
     assert result == "05S01101-1002", f"Expected 05S01101-1002, got {result}"
     print(f"OK 数字组件追加法: {result}")
+
+    # 主机层判定：根的直接子级两位数字（如 -00）是主机层
+    assert is_host_level("05S01101-00", "05S01101", "05S01101"), "-00 应为主机层"
+    assert not is_host_level("05S01101-10", "05S01101-ZBC", "05S01101"), "-10 不是主机层"
+    assert not is_host_level("05S01101-ZBC", "05S01101-00", "05S01101"), "字母组件不是主机层"
+    assert not is_host_level("05S01101-00", None, "05S01101"), "无父级引用不是主机层"
+    print("OK 主机层判定")
 
     print()
 
