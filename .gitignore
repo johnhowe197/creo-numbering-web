@@ -21,3 +21,6 @@ web_numbering*.png
 creo编号器/05S01101.json
 creo编号器/numbers.json
 creo编号器/data/
+
+# 桌面版（仅在本地使用，不纳入 git 管理；Web 版部署时从本地拷贝 core）
+creo编号器/

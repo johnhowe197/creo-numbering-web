@@ -97,3 +97,4 @@ creo编号器-web/
 ```
 
 > 部署到服务器时，需连同 `creo编号器/core` 目录一起上传（`app/numbering.py` 依赖它）。
+> 桌面版 `creo编号器/` 不纳入 git 管理，core 目录从本地开发机拷贝即可。
