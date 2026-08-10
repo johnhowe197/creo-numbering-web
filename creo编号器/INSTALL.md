@@ -38,6 +38,20 @@ python start.py
    - 自动保存编号历史
    - 支持清空历史记录
 
+## Web 版
+
+Web 版（`creo编号器-web/`）将数据存到服务器，支持多电脑共享，编号规则与桌面版一致：
+
+```bash
+cd creo编号器-web
+pip install -r requirements.txt
+cd web && npm install && npm run build && cd ..
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+浏览器打开 http://127.0.0.1:8000/ 。服务器部署预案见
+`creo编号器-web/deploy/部署预案.md`。
+
 ### 使用步骤
 
 1. 在"父级图号"输入框中输入父级图号

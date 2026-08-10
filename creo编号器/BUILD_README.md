@@ -92,6 +92,19 @@ Creo编号器_安装程序.exe /S
 - Windows 10/11
 - 无需安装Python或其他依赖
 
+## Web 版构建
+
+Web 版前端（React + Vite）构建：
+
+```batch
+cd creo编号器-web\web
+npm install
+npm run build
+```
+
+构建产物 `web\dist\` 由后端 FastAPI 自动托管，无需额外配置。
+Web 版运行与部署见 `creo编号器-web\README.md`。
+
 ## 常见问题
 
 ### Q: 打包后的程序无法运行？
