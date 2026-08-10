@@ -103,7 +103,7 @@ npm run build
 ```
 
 构建产物 `web\dist\` 由后端 FastAPI 自动托管，无需额外配置。
-Web 版运行与部署见 `creo编号器-web\README.md`。
+Web 版运行与部署见 `../../creo编号器-web/README.md`。
 
 ## 常见问题
 

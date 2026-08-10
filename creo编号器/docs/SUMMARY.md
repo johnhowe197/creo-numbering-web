@@ -56,8 +56,8 @@ creo编号器/
 ├── requirements.txt      # 依赖
 ├── run.bat               # Windows启动脚本
 ├── test_core.py          # 测试脚本
-├── README.md             # 项目说明
-├── INSTALL.md            # 安装指南
+├── README.md             # 总览入口
+└── docs/                 # 文档归档
 └── SUMMARY.md            # 本文件
 ```
 
