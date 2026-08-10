@@ -96,5 +96,5 @@ creo编号器-web/
 └── data/                # SQLite 数据库（运行时生成）
 ```
 
-> 部署到服务器时，需连同 `creo编号器/core` 目录一起上传（`app/numbering.py` 依赖它）。
-> 桌面版 `creo编号器/` 不纳入 git 管理，core 目录从本地开发机拷贝即可。
+> 编号核心逻辑已内置在 `core/`（Web 版自包含，不依赖桌面版），随 git 一起管理。
+> 桌面版 `creo编号器/` 不纳入 git 管理；如桌面版 core 有更新，需同步到本目录 `core/`。

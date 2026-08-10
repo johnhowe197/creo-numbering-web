@@ -12,11 +12,11 @@ from pathlib import Path
 def _resolve_core_dir() -> Path:
     """定位编号核心目录：
     1. 打包后（frozen）：解压目录下的 core
-    2. 开发模式：上一级 creo编号器/core
+    2. 开发模式：Web 版目录内的 core（自包含，不依赖桌面版）
     """
     if getattr(sys, "frozen", False):
         return Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent)) / "core"
-    return Path(__file__).resolve().parents[2] / "creo编号器"
+    return Path(__file__).resolve().parent.parent / "core"
 
 
 _CORE_DIR = _resolve_core_dir()

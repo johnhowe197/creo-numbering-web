@@ -8,7 +8,7 @@ uvicorn_datas, uvicorn_binaries, uvicorn_hidden = collect_all("uvicorn")
 
 a = Analysis(
     ["launcher.py"],
-    pathex=[".", "../creo编号器"],
+    pathex=["."],
     binaries=uvicorn_binaries,
     datas=[
         ("web/dist", "web/dist"),           # 前端构建产物
