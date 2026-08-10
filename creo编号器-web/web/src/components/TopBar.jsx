@@ -5,10 +5,14 @@ export function TopBar({
   projectId,
   onSelectProject,
   onNewProject,
+  onRenameProject,
   onDeleteProject,
   onImport,
 }) {
   const fileRef = useRef(null)
+
+  const projectLabel = (p) =>
+    p.name && p.name !== p.root_number ? `${p.root_number} · ${p.name}` : p.root_number
 
   return (
     <div className="topbar">
@@ -21,12 +25,13 @@ export function TopBar({
         <option value="">选择项目…</option>
         {projects.map((p) => (
           <option key={p.id} value={p.id}>
-            {p.root_number} · {p.name || p.root_number}
+            {projectLabel(p)}
           </option>
         ))}
       </select>
       <span className="topbar-spacer" />
       <button onClick={onNewProject}>新建项目</button>
+      <button disabled={!projectId} onClick={onRenameProject}>项目名称</button>
       <button disabled={!projectId} onClick={onDeleteProject}>删除项目</button>
       <button onClick={() => fileRef.current?.click()}>导入数据</button>
       <input

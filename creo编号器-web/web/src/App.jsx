@@ -83,14 +83,28 @@ export default function App() {
 
   const handleNewProject = () =>
     run(async () => {
-      const input = window.prompt('请输入根图号（如 05S01101）：')
-      const root = (input || '').trim()
+      const rootInput = window.prompt('请输入根图号（如 05S01101）：')
+      const root = (rootInput || '').trim()
       if (!root) return
-      const created = await api.createProject(root, root)
+      const nameInput = window.prompt('请输入项目中文名称（可留空，如：标准化中部槽）：', root)
+      const name = (nameInput || '').trim() || root
+      const created = await api.createProject(root, name)
       setProjectId(created.id)
       setExpanded(new Set([root]))
       await loadProjects()
-      setStatus(`已创建项目: ${root}`)
+      setStatus(`已创建项目: ${root}${name !== root ? `（${name}）` : ''}`)
+    })
+
+  const handleRenameProject = () =>
+    run(async () => {
+      if (!project) return
+      const input = window.prompt('请输入项目名称（如：标准化中部槽）：', project.name)
+      const name = (input || '').trim()
+      if (!name || name === project.name) return
+      const result = await api.updateProject(project.id, { name })
+      await loadProjects()
+      if (projectId != null) await loadProject(projectId)
+      setStatus(`项目名称已更新: ${result.name}`)
     })
 
   const handleDeleteProject = () =>
@@ -196,6 +210,7 @@ export default function App() {
         projectId={projectId}
         onSelectProject={setProjectId}
         onNewProject={handleNewProject}
+        onRenameProject={handleRenameProject}
         onDeleteProject={handleDeleteProject}
         onImport={handleImport}
       />

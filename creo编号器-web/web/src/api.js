@@ -26,6 +26,12 @@ export const api = {
 
   deleteProject: (id) => request(`/api/projects/${id}`, { method: 'DELETE' }),
 
+  updateProject: (id, payload) =>
+    request(`/api/projects/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+
   addNode: (projectId, type, payload) =>
     request(
       `/api/projects/${projectId}/${type === 'component' ? 'components' : 'parts'}`,

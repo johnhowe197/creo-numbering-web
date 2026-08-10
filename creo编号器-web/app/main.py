@@ -37,6 +37,10 @@ class ProjectCreate(BaseModel):
     name: str = ""
 
 
+class ProjectUpdate(BaseModel):
+    name: str | None = None
+
+
 class NodeCreate(BaseModel):
     parent_number: str
     mode: str = "auto"  # auto | manual
@@ -271,6 +275,27 @@ def delete_project(project_id: int):
         conn.execute("DELETE FROM projects WHERE id = ?", (project_id,))
         conn.commit()
         return {"ok": True}
+    finally:
+        conn.close()
+
+
+@app.patch("/api/projects/{project_id}")
+def update_project(project_id: int, payload: ProjectUpdate):
+    """更新项目信息（当前支持修改项目名称）"""
+    conn = db.get_connection()
+    try:
+        get_project_or_404(conn, project_id)
+        now = db.now()
+        if payload.name is not None:
+            conn.execute(
+                "UPDATE projects SET name = ?, updated_at = ? WHERE id = ?",
+                (payload.name.strip(), now, project_id),
+            )
+        conn.commit()
+        return {"id": project_id, "name": (payload.name or "").strip()}
+    except HTTPException:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 

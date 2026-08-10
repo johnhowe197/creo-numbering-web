@@ -63,6 +63,19 @@ class NumberingApiTest(unittest.TestCase):
         self.assertEqual(self.client.delete(f"/api/projects/{pid}").status_code, 200)
         self.assertEqual(self.client.get(f"/api/projects/{pid}").status_code, 404)
 
+    def test_project_rename_name(self):
+        """项目可设置/修改中文名称"""
+        pid = create_project(self.client)
+        resp = self.client.patch(
+            f"/api/projects/{pid}", json={"name": "标准化中部槽"}
+        )
+        self.assertEqual(resp.status_code, 200, resp.text)
+        self.assertEqual(resp.json()["name"], "标准化中部槽")
+
+        projects = self.client.get("/api/projects").json()
+        self.assertEqual(projects[0]["name"], "标准化中部槽")
+        self.assertNotEqual(projects[0]["name"], projects[0]["root_number"])
+
     def test_host_level_rules(self):
         """主机层：只手动输入字母组件，不创建零件"""
         pid = create_project(self.client)
