@@ -14,7 +14,7 @@ creo编号器-web/web/node_modules/
 creo编号器-web/web/dist/
 creo编号器-web/data/
 .playwright-mcp/
-web_numbering_full.png
+web_numbering*.png
 
 # 业务数据（不入版本库）
 creo编号器/05S01101.json
