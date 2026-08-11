@@ -94,7 +94,7 @@ export function TreeView({
         <div
           className={`tree-row${multiSelected && multiSelected.has(node.number) ? ' selected' : ''}`}
           style={{ paddingLeft: 6 + depth * 18 }}
-          onClick={(e) => onSelect(node, e.ctrlKey || e.metaKey)}
+          onClick={(e) => onSelect(node, e.ctrlKey || e.metaKey, e.shiftKey)}
           onContextMenu={(e) => openMenu(e, node)}
         >
           {isLeaf ? (
@@ -111,8 +111,14 @@ export function TreeView({
           <span className={`status-dot ${node.status_color || 'empty'}`} />
           <span
             className="row-number"
-            onClick={(e) => { e.stopPropagation(); copyText(node.number); onCopy(node.number) }}
-            title="点击复制图号"
+            onClick={(e) => {
+              if (e.ctrlKey || e.metaKey) {
+                e.stopPropagation()
+                copyText(node.number)
+                onCopy(node.number)
+              }
+            }}
+            title="Ctrl+点击复制图号"
           >
             {node.number}
           </span>

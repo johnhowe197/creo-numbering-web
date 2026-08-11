@@ -50,6 +50,24 @@ export default function App() {
     return m
   }, [nodes])
 
+  /* 树先序遍历顺序（用于 Shift 范围选择） */
+  const orderedNodes = useMemo(() => {
+    const childrenMap = {}
+    for (const n of nodes) {
+      const key = n.parent ?? '__root__'
+      ;(childrenMap[key] ||= []).push(n)
+    }
+    const out = []
+    const walk = (parent) => {
+      for (const child of childrenMap[parent] || []) {
+        out.push(child)
+        if (child.node_type !== 'part') walk(child.number)
+      }
+    }
+    walk('__root__')
+    return out
+  }, [nodes])
+
   const rootNode = useMemo(
     () => nodes.find((n) => n.node_type === 'root') || nodes.find((n) => !n.parent),
     [nodes],
@@ -203,10 +221,20 @@ export default function App() {
       setStatus(`已为 ${list.length} 个节点设置颜色`)
     })
 
-  const handleSelect = (node, additive) => {
+  const handleSelect = (node, additive, range) => {
     setSelected(node.number)
     setMultiSelected((prev) => {
       const next = new Set(prev)
+      if (range) {
+        // Shift：按展开顺序选择锚点到当前节点之间的所有节点
+        const anchor = selected || (prev.size > 0 ? [...prev][prev.size - 1] : node.number)
+        const numbers = orderedNodes.map((n) => n.number)
+        const a = numbers.indexOf(anchor)
+        const b = numbers.indexOf(node.number)
+        if (a === -1 || b === -1) return new Set([node.number])
+        const [lo, hi] = a < b ? [a, b] : [b, a]
+        return new Set(numbers.slice(lo, hi + 1))
+      }
       if (additive) {
         if (next.has(node.number)) next.delete(node.number)
         else next.add(node.number)

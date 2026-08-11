@@ -163,7 +163,10 @@ select:focus, input:focus {
 }
 
 .tree-row:hover { background: var(--row-hover); }
-.tree-row.selected { background: var(--row-selected); }
+.tree-row.selected {
+  background: #bfdbfe;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
 .tree-row .indent { width: 18px; flex: none; }
 
 .expand-btn {
