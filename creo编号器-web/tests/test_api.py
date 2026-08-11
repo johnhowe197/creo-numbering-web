@@ -228,6 +228,107 @@ class NumberingApiTest(unittest.TestCase):
         self.assertEqual(resp.status_code, 201, resp.text)
         self.assertEqual(resp.json()["number"], "05S01101-00-1")
 
+    def _setup_batch_project(self):
+        pid = create_project(self.client, root="TB008S")
+        self.assertEqual(
+            add_comp(self.client, pid, "TB008S").json()["number"], "TB008S-00"
+        )
+        self.assertEqual(
+            add_comp(self.client, pid, "TB008S-00", "manual", "TB008S-0101").status_code,
+            201,
+        )
+        return pid
+
+    def test_batch_count(self):
+        """批量数量：一次连续生成 40 个零件"""
+        pid = self._setup_batch_project()
+        resp = self.client.post(
+            f"/api/projects/{pid}/batch",
+            json={
+                "parent_number": "TB008S-0101",
+                "node_type": "part",
+                "count": 40,
+            },
+        )
+        self.assertEqual(resp.status_code, 201, resp.text)
+        created = resp.json()["created"]
+        self.assertEqual(len(created), 40)
+        self.assertEqual(created[0], "TB008S-0101-1")
+        self.assertEqual(created[-1], "TB008S-0101-40")
+
+        # 继续生成从 41 开始
+        resp = self.client.post(
+            f"/api/projects/{pid}/batch",
+            json={"parent_number": "TB008S-0101", "node_type": "part", "count": 2},
+        )
+        self.assertEqual(resp.json()["created"], ["TB008S-0101-41", "TB008S-0101-42"])
+
+    def test_batch_target(self):
+        """批量补齐到目标号"""
+        pid = self._setup_batch_project()
+        resp = self.client.post(
+            f"/api/projects/{pid}/batch",
+            json={
+                "parent_number": "TB008S-0101",
+                "node_type": "part",
+                "target_number": "TB008S-0101-40",
+            },
+        )
+        self.assertEqual(resp.status_code, 201, resp.text)
+        self.assertEqual(len(resp.json()["created"]), 40)
+        self.assertEqual(resp.json()["created"][-1], "TB008S-0101-40")
+
+        # 已录到目标号 -> 返回空
+        resp = self.client.post(
+            f"/api/projects/{pid}/batch",
+            json={
+                "parent_number": "TB008S-0101",
+                "node_type": "part",
+                "target_number": "TB008S-0101-40",
+            },
+        )
+        self.assertEqual(resp.json()["created"], [])
+
+    def test_batch_list(self):
+        """批量粘贴图号列表（含重复与非法校验）"""
+        pid = self._setup_batch_project()
+        resp = self.client.post(
+            f"/api/projects/{pid}/batch",
+            json={
+                "parent_number": "TB008S-0101",
+                "node_type": "part",
+                "numbers": [
+                    "TB008S-0101-1",
+                    "TB008S-0101-2",
+                    "TB008S-0101-3",
+                ],
+            },
+        )
+        self.assertEqual(resp.status_code, 201, resp.text)
+        self.assertEqual(len(resp.json()["created"]), 3)
+
+        # 重复图号 -> 409
+        resp = self.client.post(
+            f"/api/projects/{pid}/batch",
+            json={
+                "parent_number": "TB008S-0101",
+                "node_type": "part",
+                "numbers": ["TB008S-0101-1"],
+            },
+        )
+        self.assertEqual(resp.status_code, 409)
+
+        # 非法格式 -> 400
+        resp = self.client.post(
+            f"/api/projects/{pid}/batch",
+            json={
+                "parent_number": "TB008S-0101",
+                "node_type": "part",
+                "numbers": ["TB008S-0101-abc"],
+            },
+        )
+        self.assertEqual(resp.status_code, 400)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

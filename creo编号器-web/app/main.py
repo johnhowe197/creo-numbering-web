@@ -47,6 +47,14 @@ class NodeCreate(BaseModel):
     number: str = ""    # manual 时的图号
 
 
+class BatchCreate(BaseModel):
+    parent_number: str
+    node_type: str
+    count: int = 0              # 模式1：连续生成 count 个
+    target_number: str = ""     # 模式2：补齐到目标号（如 05S01101-10-40）
+    numbers: list[str] = []     # 模式3：批量录入指定图号列表
+
+
 class NodeUpdate(BaseModel):
     name: str | None = None
     memo: str | None = None
@@ -191,6 +199,80 @@ def _validate_manual(conn, project: dict, node_type: str, manual_number: str) ->
             status_code=400, detail=f"图号应以根前缀 {prefix}- 开头"
         )
     return new_number
+
+
+def _insert_node(conn, project_id: int, parent_number: str,
+                 node_type: str, number: str) -> str:
+    """在事务中插入单个节点，返回图号"""
+    pos = next_position(conn, project_id, parent_number)
+    now = db.now()
+    conn.execute(
+        "INSERT INTO nodes (project_id, number, node_type, name, memo, "
+        "status_color, parent, position, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (project_id, number, node_type, "", "", "",
+         parent_number, pos, now, now),
+    )
+    return number
+
+
+def _batch_by_count(conn, project_id: int, parent_number: str,
+                    node_type: str, count: int) -> list:
+    """连续生成 count 个图号（从下一个可用号开始）"""
+    created = []
+    for _ in range(count):
+        new_number = compute_new_number(
+            conn, project_id, parent_number, node_type, "auto", ""
+        )
+        created.append(
+            _insert_node(conn, project_id, parent_number, node_type, new_number)
+        )
+    return created
+
+
+def _batch_to_target(conn, project_id: int, parent_number: str,
+                     node_type: str, target_number: str) -> list:
+    """补齐图号直到目标号（如已录到目标号则返回空）"""
+    target = target_number.strip()
+    project = get_project_or_404(conn, project_id)
+    if not target:
+        raise HTTPException(status_code=400, detail="请输入目标图号")
+    err = num.validate_node_number(target)
+    if err:
+        raise HTTPException(status_code=400, detail=err)
+    numbers = set(all_numbers(conn, project_id))
+    if target in numbers:
+        return []  # 已录到目标号
+
+    created = []
+    guard = 0
+    while True:
+        guard += 1
+        if guard > 2000:
+            raise HTTPException(status_code=400, detail="目标号过远，批量生成已终止")
+        new_number = compute_new_number(
+            conn, project_id, parent_number, node_type, "auto", ""
+        )
+        if new_number in numbers:
+            raise HTTPException(status_code=500, detail="批量生成出现重复图号")
+        _insert_node(conn, project_id, parent_number, node_type, new_number)
+        created.append(new_number)
+        numbers.add(new_number)
+        if new_number == target:
+            return created
+        # 若新号已越过目标（如目标 -5 但新号 -6），说明目标不在连续序列
+        if _number_order(new_number) > _number_order(target):
+            raise HTTPException(
+                status_code=400,
+                detail=f"目标号 {target} 无法通过连续生成补齐（中间可能缺失或已存在）",
+            )
+
+
+def _number_order(number: str) -> int:
+    """提取图号末尾数字序号（用于批量补号比较）"""
+    import re
+    m = re.search(r"(\d+)$", number)
+    return int(m.group(1)) if m else 0
 
 
 # ---------------- 项目路由 ----------------
@@ -346,6 +428,60 @@ def add_component(project_id: int, payload: NodeCreate):
 @app.post("/api/projects/{project_id}/parts", status_code=201)
 def add_part(project_id: int, payload: NodeCreate):
     return _add_node(project_id, payload, "part")
+
+
+@app.post("/api/projects/{project_id}/batch", status_code=201)
+def batch_create(project_id: int, payload: BatchCreate):
+    """批量添加节点：count 连续生成 / target 补齐到目标号 / numbers 批量录入"""
+    if payload.node_type not in ("component", "part"):
+        raise HTTPException(status_code=400, detail="无效的图号类型")
+
+    conn = db.get_connection()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        get_project_or_404(conn, project_id)
+        parent = get_node_or_404(conn, project_id, payload.parent_number)
+        if parent["node_type"] == "part":
+            raise HTTPException(status_code=400, detail="零件不能作为父级")
+
+        if payload.numbers:
+            created = []
+            project = get_project_or_404(conn, project_id)
+            for number in payload.numbers:
+                valid = _validate_manual(conn, project, payload.node_type, number)
+                created.append(_insert_node(
+                    conn, project_id, payload.parent_number,
+                    payload.node_type, valid,
+                ))
+        elif payload.target_number:
+            created = _batch_to_target(
+                conn, project_id, payload.parent_number,
+                payload.node_type, payload.target_number,
+            )
+        elif payload.count and payload.count > 0:
+            if payload.count > 2000:
+                raise HTTPException(status_code=400, detail="单次最多批量生成 2000 个")
+            created = _batch_by_count(
+                conn, project_id, payload.parent_number,
+                payload.node_type, payload.count,
+            )
+        else:
+            raise HTTPException(status_code=400, detail="批量参数无效")
+
+        conn.execute(
+            "UPDATE projects SET updated_at = ? WHERE id = ?",
+            (db.now(), project_id),
+        )
+        conn.commit()
+        return {"created": created}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"批量添加失败: {e}")
+    finally:
+        conn.close()
 
 
 @app.patch("/api/projects/{project_id}/nodes/{number}")

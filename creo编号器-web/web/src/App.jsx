@@ -195,12 +195,21 @@ export default function App() {
     if (selectedNode) handleColor(selectedNode, color)
   }
 
-  const handleDialogDone = async (result) => {
+  const handleDialogDone = async (createdList) => {
     setDialog(null)
     await refresh()
-    setExpanded((prev) => new Set(prev).add(result.parent))
-    setSelected(result.number)
-    setStatus(`已添加${result.node_type === 'part' ? '零件' : '组件'}: ${result.number}`)
+    const list = Array.isArray(createdList) ? createdList : []
+    if (list.length > 0) {
+      const first = list[0]
+      setExpanded((prev) => new Set(prev).add(first.parent))
+      setSelected(first.number)
+    }
+    const kind = dialog ? (dialog.type === 'part' ? '零件' : '组件') : '节点'
+    setStatus(
+      list.length > 1
+        ? `已批量添加 ${list.length} 个${kind}（${list[0].number} … ${list[list.length - 1].number}）`
+        : `已添加${kind}: ${list[0] ? list[0].number : ''}`,
+    )
   }
 
   return (

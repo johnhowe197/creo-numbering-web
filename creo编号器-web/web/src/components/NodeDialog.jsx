@@ -18,6 +18,8 @@ function parentKind(node, rootNumber) {
 export function NodeDialog({ project, parentNode, type, onClose, onDone }) {
   const [mode, setMode] = useState('auto')
   const [manualNumber, setManualNumber] = useState('')
+  const [count, setCount] = useState('1')
+  const [targetNumber, setTargetNumber] = useState('')
   const [error, setError] = useState('')
 
   const kind = useMemo(
@@ -70,12 +72,37 @@ export function NodeDialog({ project, parentNode, type, onClose, onDone }) {
   async function submit() {
     setError('')
     try {
-      const result = await api.addNode(project.id, type, {
-        parent_number: parentNode.number,
-        mode,
-        number: manualNumber.trim(),
-      })
-      onDone(result)
+      const parent = parentNode.number
+      const lines = manualNumber.split('\n').map((s) => s.trim()).filter(Boolean)
+      const countNum = Math.floor(Number(count)) || 1
+      const target = targetNumber.trim()
+
+      if (mode === 'auto' && target) {
+        const r = await api.batch(project.id, {
+          parent_number: parent, node_type: type, target_number: target,
+        })
+        onDone(r.created)
+      } else if (mode === 'auto' && countNum > 1) {
+        const r = await api.batch(project.id, {
+          parent_number: parent, node_type: type, count: countNum,
+        })
+        onDone(r.created)
+      } else if (mode === 'auto') {
+        const r = await api.addNode(project.id, type, {
+          parent_number: parent, mode: 'auto', number: '',
+        })
+        onDone([r])
+      } else if (lines.length > 1) {
+        const r = await api.batch(project.id, {
+          parent_number: parent, node_type: type, numbers: lines,
+        })
+        onDone(r.created)
+      } else {
+        const r = await api.addNode(project.id, type, {
+          parent_number: parent, mode: 'manual', number: lines[0] || '',
+        })
+        onDone([r])
+      }
     } catch (e) {
       setError(e.message)
     }
@@ -104,14 +131,44 @@ export function NodeDialog({ project, parentNode, type, onClose, onDone }) {
 
         {(mode === 'manual' || forceManual) && !isPartBlocked && (
           <div className="field">
-            <label>图号</label>
-            <input
-              style={{ width: '100%' }}
+            <label>图号（可粘贴多行，每行一个）</label>
+            <textarea
+              rows={3}
+              style={{ width: '100%', fontFamily: 'var(--font-mono)', fontSize: '14px' }}
               value={manualNumber}
               onChange={(e) => setManualNumber(e.target.value)}
-              placeholder={type === 'part' ? '如 05S01101-10-1' : '如 05S01101-ZBC'}
+              placeholder={
+                type === 'part'
+                  ? '如：05S01101-10-1\n    05S01101-10-2（每行一个）'
+                  : '如：05S01101-ZBC\n    05S01101-KTC（每行一个）'
+              }
               autoFocus
             />
+          </div>
+        )}
+
+        {mode === 'auto' && !isPartBlocked && (
+          <div className="field" style={{ display: 'flex', gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <label>数量（批量生成）</label>
+              <input
+                type="number"
+                min="1"
+                max="2000"
+                style={{ width: '100%' }}
+                value={count}
+                onChange={(e) => setCount(e.target.value)}
+              />
+            </div>
+            <div style={{ flex: 2 }}>
+              <label>或补齐到号（可选）</label>
+              <input
+                style={{ width: '100%' }}
+                value={targetNumber}
+                onChange={(e) => setTargetNumber(e.target.value)}
+                placeholder={type === 'part' ? '如 05S01101-10-40' : '如 05S01101-100140'}
+              />
+            </div>
           </div>
         )}
 

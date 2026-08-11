@@ -38,6 +38,12 @@ export const api = {
       { method: 'POST', body: JSON.stringify(payload) },
     ),
 
+  batch: (projectId, payload) =>
+    request(`/api/projects/${projectId}/batch`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
   updateNode: (projectId, number, payload) =>
     request(
       `/api/projects/${projectId}/nodes/${encodeURIComponent(number)}`,
