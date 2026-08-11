@@ -101,6 +101,22 @@ class NumberingApiTest(unittest.TestCase):
         self.assertEqual(resp.status_code, 400)
         self.assertIn("主机层", resp.json()["detail"])
 
+    def test_host_level_from_component_root(self):
+        """从组件开始创建项目（根带横杠）：直接子级不是主机层，可自动生成"""
+        pid = create_project(self.client, root="TEST02-ZBC")
+        resp = add_comp(self.client, pid, "TEST02-ZBC", "manual", "TEST02-10")
+        self.assertEqual(resp.status_code, 201, resp.text)
+
+        # 在其下自动添加组件 -> 追加法（不再被误判为主机层强制手动）
+        resp = add_comp(self.client, pid, "TEST02-10")
+        self.assertEqual(resp.status_code, 201, resp.text)
+        self.assertEqual(resp.json()["number"], "TEST02-1001")
+
+        # 零件也正常生成
+        resp = add_part(self.client, pid, "TEST02-10")
+        self.assertEqual(resp.status_code, 201, resp.text)
+        self.assertEqual(resp.json()["number"], "TEST02-10-1")
+
     def test_alpha_component_rules(self):
         """字母组件：组件走全局数字，零件走宿主序列（共享）"""
         pid = create_project(self.client)

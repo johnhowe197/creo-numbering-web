@@ -11,6 +11,7 @@ function parentKind(node, rootNumber) {
   const alpha = /[A-Za-z]/.test(level)
   const isHostLevel =
     !isRoot && node.node_type !== 'part' &&
+    !rootNumber.includes('-') &&
     node.parent === rootNumber && /^\d{2}$/.test(level)
   return { alpha, isHostLevel }
 }

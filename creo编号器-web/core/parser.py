@@ -95,6 +95,8 @@ def is_host_level(parent_number: str, parent_parent: Optional[str], root_number:
     判断是否为「主机层」：根的直接子级、层级码为两位纯数字（如 -00）
 
     主机层只放字母组件（手动输入），不创建零件。
+    仅「根图号（无横杠）开始」的项目存在主机层；
+    从组件开始的项目（根图号带横杠）不存在主机层。
 
     Args:
         parent_number: 父级图号（候选主机层节点）
@@ -104,6 +106,8 @@ def is_host_level(parent_number: str, parent_parent: Optional[str], root_number:
     Returns:
         bool: 是否为主机层
     """
+    if "-" in root_number:
+        return False
     if not parent_parent or parent_parent != root_number:
         return False
     parsed = parse_drawing_number(parent_number)
