@@ -111,14 +111,12 @@ export function TreeView({
           <span className={`status-dot ${node.status_color || 'empty'}`} />
           <span
             className="row-number"
-            onClick={(e) => {
-              if (e.ctrlKey || e.metaKey) {
-                e.stopPropagation()
-                copyText(node.number)
-                onCopy(node.number)
-              }
+            onDoubleClick={(e) => {
+              e.stopPropagation()
+              copyText(node.number)
+              onCopy(node.number)
             }}
-            title="Ctrl+点击复制图号"
+            title="双击复制图号"
           >
             {node.number}
           </span>
@@ -159,16 +157,18 @@ export function TreeView({
               {node.memo || '\u00A0'}
             </span>
           )}
-          {!isLeaf && (
-            <span className="row-actions">
-              <button title="添加组件" onClick={(e) => { e.stopPropagation(); onAdd(node, 'component') }}>+组件</button>
-              <button title="添加零件" onClick={(e) => { e.stopPropagation(); onAdd(node, 'part') }}>+零件</button>
-              <button title="重命名" onClick={(e) => { e.stopPropagation(); onRename(node) }}>✎</button>
-              {node.node_type !== 'root' && (
-                <button title="删除" onClick={(e) => { e.stopPropagation(); onDelete(node) }}>🗑</button>
-              )}
-            </span>
-          )}
+          <span className="row-actions">
+            {!isLeaf && (
+              <>
+                <button title="添加组件" onClick={(e) => { e.stopPropagation(); onAdd(node, 'component') }}>+组件</button>
+                <button title="添加零件" onClick={(e) => { e.stopPropagation(); onAdd(node, 'part') }}>+零件</button>
+              </>
+            )}
+            <button title="重命名" onClick={(e) => { e.stopPropagation(); onRename(node) }}>✎</button>
+            {node.node_type !== 'root' && (
+              <button title="删除" onClick={(e) => { e.stopPropagation(); onDelete(node) }}>🗑</button>
+            )}
+          </span>
         </div>
         {isExpanded && kids.map((k) => renderNode(k, depth + 1))}
       </React.Fragment>
