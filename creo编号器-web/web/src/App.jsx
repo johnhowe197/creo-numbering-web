@@ -12,6 +12,7 @@ export default function App() {
   const [projectId, setProjectId] = useState(null)
   const [project, setProject] = useState(null)
   const [selected, setSelected] = useState(null)
+  const [multiSelected, setMultiSelected] = useState(() => new Set())
   const [expanded, setExpanded] = useState(() => new Set())
   const [dialog, setDialog] = useState(null) // { type, parent }
   const [status, setStatus] = useState('就绪')
@@ -36,6 +37,7 @@ export default function App() {
     if (projectId == null) {
       setProject(null)
       setSelected(null)
+      setMultiSelected(new Set())
       return
     }
     loadProject(projectId).catch((e) => setStatus(`加载失败: ${e.message}`))
@@ -70,8 +72,11 @@ export default function App() {
     const data = await loadProject(projectId)
     if (selected && !data.nodes.some((n) => n.number === selected)) {
       setSelected(null)
+      setMultiSelected(new Set())
     }
   }, [projectId, loadProject, selected])
+
+  const selectedCount = multiSelected.size
 
   async function run(action) {
     try {
@@ -163,11 +168,55 @@ export default function App() {
       setStatus(`已删除节点: ${node.number}`)
     })
 
+  const handleDeleteSelected = () =>
+    run(async () => {
+      const list = [...multiSelected]
+      if (list.length === 0) return
+      if (!window.confirm(`确定删除选中的 ${list.length} 个节点及其所有子节点？`)) return
+      for (const num of list) {
+        try {
+          await api.deleteNode(project.id, num)
+        } catch {
+          // 节点可能已随祖先一并删除，忽略
+        }
+      }
+      await refresh()
+      setSelected(null)
+      setMultiSelected(new Set())
+      setStatus(`已删除 ${list.length} 个节点`)
+    })
+
   const handleColor = (node, color) =>
     run(async () => {
       await api.updateNode(project.id, node.number, { status_color: color })
       await refresh()
     })
+
+  const handleBulkColor = (color) =>
+    run(async () => {
+      const list = [...multiSelected]
+      if (list.length === 0) return
+      for (const num of list) {
+        await api.updateNode(project.id, num, { status_color: color })
+      }
+      await refresh()
+      setStatus(`已为 ${list.length} 个节点设置颜色`)
+    })
+
+  const handleSelect = (node, additive) => {
+    setSelected(node.number)
+    setMultiSelected((prev) => {
+      const next = new Set(prev)
+      if (additive) {
+        if (next.has(node.number)) next.delete(node.number)
+        else next.add(node.number)
+        return next
+      }
+      next.clear()
+      next.add(node.number)
+      return next
+    })
+  }
 
   const handleEditField = (number, field, value) =>
     run(async () => {
@@ -185,15 +234,15 @@ export default function App() {
     })
   }
 
+  const handleCopy = (number) => {
+    setStatus(`已复制图号: ${number}`)
+  }
+
   const handleExpandAll = () => {
     setExpanded(new Set(nodes.filter((n) => n.node_type !== 'part').map((n) => n.number)))
   }
 
   const handleCollapseAll = () => setExpanded(new Set())
-
-  const handleToolbarColor = (color) => {
-    if (selectedNode) handleColor(selectedNode, color)
-  }
 
   const handleDialogDone = async (createdList) => {
     setDialog(null)
@@ -231,8 +280,10 @@ export default function App() {
         </div>
         <div className="divider" />
         <div className="group">
-          <button disabled={!selectedNode} onClick={() => selectedNode && handleRename(selectedNode)}>重命名</button>
-          <button disabled={!selectedNode} onClick={() => selectedNode && handleDelete(selectedNode)}>删除</button>
+          <button disabled={selectedCount !== 1} onClick={() => selectedNode && handleRename(selectedNode)}>重命名</button>
+          <button disabled={selectedCount === 0} onClick={handleDeleteSelected}>
+            {selectedCount > 1 ? `删除(${selectedCount})` : '删除'}
+          </button>
         </div>
         <div className="divider" />
         <div className="group">
@@ -242,8 +293,8 @@ export default function App() {
         <div className="divider" />
         <div className="group">
           <button
-            disabled={!selectedNode}
-            onClick={() => handleToolbarColor('')}
+            disabled={selectedCount === 0}
+            onClick={() => handleBulkColor('')}
             title="清除颜色"
           >
             无色
@@ -251,8 +302,8 @@ export default function App() {
           {COLOR_KEYS.slice(1).map((c) => (
             <button
               key={c}
-              disabled={!selectedNode}
-              onClick={() => handleToolbarColor(c)}
+              disabled={selectedCount === 0}
+              onClick={() => handleBulkColor(c)}
               title={`设置颜色：${c}`}
             >
               {c}
@@ -265,7 +316,8 @@ export default function App() {
         <TreeView
           nodes={nodes}
           selected={selected}
-          onSelect={(n) => setSelected(n.number)}
+          multiSelected={multiSelected}
+          onSelect={handleSelect}
           expanded={expanded}
           onToggle={handleToggle}
           onAdd={handleAdd}
@@ -273,6 +325,7 @@ export default function App() {
           onDelete={handleDelete}
           onColor={handleColor}
           onEditField={handleEditField}
+          onCopy={handleCopy}
         />
         <PropertyPanel
           node={selectedNode}
@@ -281,7 +334,10 @@ export default function App() {
       </div>
 
       <div className="statusbar">
-        <span>{status}</span>
+        <span>
+          {status}
+          {selectedCount > 0 && `（已选 ${selectedCount} 个节点）`}
+        </span>
         <span style={{ marginLeft: 'auto' }}>
           节点数: {stats.total} | 组件: {stats.components} | 零件: {stats.parts}
         </span>

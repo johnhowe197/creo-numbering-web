@@ -11,6 +11,7 @@ const COLOR_OPTIONS = [
 export function TreeView({
   nodes,
   selected,
+  multiSelected,
   onSelect,
   expanded,
   onToggle,
@@ -19,6 +20,7 @@ export function TreeView({
   onDelete,
   onColor,
   onEditField,
+  onCopy,
 }) {
   const [menu, setMenu] = useState(null)
   const [editing, setEditing] = useState(null) // { number, field, value }
@@ -66,6 +68,21 @@ export function TreeView({
     setEditing(null)
   }
 
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+  }
+
   function renderNode(node, depth) {
     const isLeaf = node.node_type === 'part'
     const isExpanded = expanded.has(node.number)
@@ -75,9 +92,9 @@ export function TreeView({
     return (
       <React.Fragment key={node.number}>
         <div
-          className={`tree-row${selected === node.number ? ' selected' : ''}`}
+          className={`tree-row${multiSelected && multiSelected.has(node.number) ? ' selected' : ''}`}
           style={{ paddingLeft: 6 + depth * 18 }}
-          onClick={() => onSelect(node)}
+          onClick={(e) => onSelect(node, e.ctrlKey || e.metaKey)}
           onContextMenu={(e) => openMenu(e, node)}
         >
           {isLeaf ? (
@@ -92,7 +109,13 @@ export function TreeView({
             </button>
           )}
           <span className={`status-dot ${node.status_color || 'empty'}`} />
-          <span className="row-number">{node.number}</span>
+          <span
+            className="row-number"
+            onClick={(e) => { e.stopPropagation(); copyText(node.number); onCopy(node.number) }}
+            title="点击复制图号"
+          >
+            {node.number}
+          </span>
           {editingThis && editing.field === 'name' ? (
             <input
               className="inline-edit"
