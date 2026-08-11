@@ -22,6 +22,11 @@ RequestExecutionLevel user
 !insertmacro MUI_LANGUAGE "SimpChinese"
 
 Section "安装" SecMain
+  ; 终止可能正在运行的旧版进程，避免文件占用导致写入失败
+  nsExec::ExecToStack 'powershell -NoProfile -Command "Stop-Process -Name Creo编号器Web -Force -ErrorAction SilentlyContinue"'
+  Pop $0
+  Sleep 500
+
   SetOutPath "$INSTDIR"
   ; 打包产物（dist\Creo编号器Web\ 下的全部文件）
   File /r "dist\Creo编号器Web\*.*"
@@ -45,6 +50,11 @@ Section "安装" SecMain
 SectionEnd
 
 Section "Uninstall"
+  ; 终止正在运行的程序
+  nsExec::ExecToStack 'powershell -NoProfile -Command "Stop-Process -Name Creo编号器Web -Force -ErrorAction SilentlyContinue"'
+  Pop $0
+  Sleep 500
+
   ; 注意：data\ 目录存放业务数据，卸载时保留，不会删除
   Delete "$INSTDIR\Uninstall.exe"
   Delete "$INSTDIR\Creo编号器Web.exe"

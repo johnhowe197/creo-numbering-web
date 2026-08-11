@@ -12,6 +12,7 @@ a = Analysis(
     binaries=uvicorn_binaries,
     datas=[
         ("web/dist", "web/dist"),           # 前端构建产物
+        ("app_icon.png", "."),              # 托盘图标
     ] + uvicorn_datas,
     hiddenimports=[
         "app.main",
@@ -21,6 +22,8 @@ a = Analysis(
         "core.parser",
         "core.generator",
         "core.tree_model",
+        "pystray",
+        "PIL",
     ] + uvicorn_hidden,
     hookspath=[],
     hooksconfig={},
@@ -50,7 +53,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon="../creo编号器/app_icon.ico",
+    icon="app_icon.ico",
     version="version_info.txt",
 )
 
