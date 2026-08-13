@@ -473,7 +473,12 @@ def batch_create(project_id: int, payload: BatchCreate):
             (db.now(), project_id),
         )
         conn.commit()
-        return {"created": created}
+        # 返回节点对象数组，与单个添加接口保持一致
+        created_objs = [
+            {"number": n, "node_type": payload.node_type, "parent": payload.parent_number}
+            for n in created
+        ]
+        return {"created": created_objs}
     except HTTPException:
         conn.rollback()
         raise

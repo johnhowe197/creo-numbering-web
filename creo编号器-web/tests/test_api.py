@@ -269,15 +269,19 @@ class NumberingApiTest(unittest.TestCase):
         self.assertEqual(resp.status_code, 201, resp.text)
         created = resp.json()["created"]
         self.assertEqual(len(created), 40)
-        self.assertEqual(created[0], "TB008S-0101-1")
-        self.assertEqual(created[-1], "TB008S-0101-40")
+        self.assertEqual(created[0]["number"], "TB008S-0101-1")
+        self.assertEqual(created[-1]["number"], "TB008S-0101-40")
+        self.assertEqual(created[0]["parent"], "TB008S-0101")
 
         # 继续生成从 41 开始
         resp = self.client.post(
             f"/api/projects/{pid}/batch",
             json={"parent_number": "TB008S-0101", "node_type": "part", "count": 2},
         )
-        self.assertEqual(resp.json()["created"], ["TB008S-0101-41", "TB008S-0101-42"])
+        self.assertEqual(
+            [c["number"] for c in resp.json()["created"]],
+            ["TB008S-0101-41", "TB008S-0101-42"],
+        )
 
     def test_batch_target(self):
         """批量补齐到目标号"""
@@ -292,7 +296,7 @@ class NumberingApiTest(unittest.TestCase):
         )
         self.assertEqual(resp.status_code, 201, resp.text)
         self.assertEqual(len(resp.json()["created"]), 40)
-        self.assertEqual(resp.json()["created"][-1], "TB008S-0101-40")
+        self.assertEqual(resp.json()["created"][-1]["number"], "TB008S-0101-40")
 
         # 已录到目标号 -> 返回空
         resp = self.client.post(

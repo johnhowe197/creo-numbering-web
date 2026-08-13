@@ -280,6 +280,7 @@ export default function App() {
       const first = list[0]
       setExpanded((prev) => new Set(prev).add(first.parent))
       setSelected(first.number)
+      setMultiSelected(new Set([first.number]))
     }
     const kind = dialog ? (dialog.type === 'part' ? '零件' : '组件') : '节点'
     setStatus(
