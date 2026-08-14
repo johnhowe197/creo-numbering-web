@@ -8,6 +8,24 @@ const COLOR_OPTIONS = [
   { key: 'blue', label: '蓝色' },
 ]
 
+/* 同级排序：先组件后零件；组内按图号末尾数字升序（无数字的字母组件排最前） */
+export function sortChildren(list) {
+  const tailNumber = (number) => {
+    const m = number.match(/(\d+)$/)
+    return m ? parseInt(m[1], 10) : null
+  }
+  return [...list].sort((a, b) => {
+    const ta = a.node_type === 'part' ? 1 : 0
+    const tb = b.node_type === 'part' ? 1 : 0
+    if (ta !== tb) return ta - tb
+    const na = tailNumber(a.number)
+    const nb = tailNumber(b.number)
+    if (na !== null && nb !== null) return na - nb
+    if (na === null && nb === null) return a.number.localeCompare(b.number)
+    return na === null ? -1 : 1
+  })
+}
+
 export function TreeView({
   nodes,
   selected,
@@ -30,6 +48,9 @@ export function TreeView({
     for (const n of nodes) {
       const key = n.parent ?? '__root__'
       ;(m[key] ||= []).push(n)
+    }
+    for (const key of Object.keys(m)) {
+      m[key] = sortChildren(m[key])
     }
     return m
   }, [nodes])

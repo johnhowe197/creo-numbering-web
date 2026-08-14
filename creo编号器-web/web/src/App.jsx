@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from './api'
 import { TopBar } from './components/TopBar'
 import { TreeView } from './components/TreeView'
+import { sortChildren } from './components/TreeView'
 import { PropertyPanel } from './components/PropertyPanel'
 import { NodeDialog } from './components/NodeDialog'
 
@@ -56,6 +57,9 @@ export default function App() {
     for (const n of nodes) {
       const key = n.parent ?? '__root__'
       ;(childrenMap[key] ||= []).push(n)
+    }
+    for (const key of Object.keys(childrenMap)) {
+      childrenMap[key] = sortChildren(childrenMap[key])
     }
     const out = []
     const walk = (parent) => {
